@@ -20,6 +20,7 @@ import { CartProvider } from './data/CartProvider.js'
 import Login from './pages/Login/Login.js';
 import Home from './pages/Home/Home.js';
 import Signup from './pages/Signup/Signup.js';
+import { AuthProvider } from './data/AuthProvider'; // Adjust path
 
 // Import background images
 
@@ -82,10 +83,12 @@ const BackgroundWrapper = ({ children }) => {
 
 function App() {
   return (
+    <AuthProvider> {/* AuthProvider is at a high level */}
+     <CartProvider>
     <Router>
       <BackgroundWrapper>
         <Header />
-        <CartProvider>
+       
           <div className="main-content" style={{ flex: 1 }}>
             <Routes>
               <Route path="/" element={<Home />}/>
@@ -108,9 +111,10 @@ function App() {
             </Routes>
           </div>
           <Footer />
-        </CartProvider>
+        
       </BackgroundWrapper>
-    </Router>
+    </Router></CartProvider>
+    </AuthProvider> 
   );
 }
 

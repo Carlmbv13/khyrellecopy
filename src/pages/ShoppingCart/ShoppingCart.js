@@ -1,17 +1,14 @@
 // src/pages/ShoppingCart/ShoppingCart.js
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import './ShoppingCart.css'; // Make sure this CSS file exists and is styled
 import { Link, useNavigate } from 'react-router-dom';
-import { useCart } from '../../data/CartProvider'; // Adjust path
+import { useCart } from '../../data/CartProvider'; // Adjust path if CartProvider is not in src/data/
 
-// Example image imports for recommended items (if they are static and from src/assets)
-// Ensure these paths are correct relative to ShoppingCart.js
-import bronzeDaggerImg from '../../assets/bronze_dagger.png';
-import ironArmorImg from '../../assets/iron_armor.png';
-import steelHelmetImg from '../../assets/steel_helmet.png';
-import titaniumDaggerImg from '../../assets/titanium_dagger.png';
-// The imageMap is primarily managed in ProductDetail/ProductPage.
-// item.image coming from CartProvider should already be the imported variable.
+// Import the centralized imageMap from your utils folder
+// Path is relative from src/pages/ShoppingCart/ to src/utils/
+import { productImages } from '../../utils/productImages'; // <--- IMPORTED HERE
+
+// No need for local image imports here if they are all managed in productImages.js and accessed via productImages map
 
 export default function ShoppingCart() {
   const { 
@@ -25,21 +22,58 @@ export default function ShoppingCart() {
 
   const navigate = useNavigate();
 
-  const recommendedItems = [ // Static example, ensure these items have necessary fields for handleAddToCart
-    { id: 5, ProductID: 5, Name: "Bronze Dagger", Price: 1000, ImagePath: 'bronze_dagger.png', image: bronzeDaggerImg, Description: "A trusty sidearm.", ItemType: 'dagger', Material: 'bronze', Stock: 10, Rating: 4, CraftedBy: "Artisan" },
-    { id: 6, ProductID: 6, Name: "Iron Armor", Price: 1200, ImagePath: 'iron_armor.png', image: ironArmorImg, Description: "Solid protection.", ItemType: 'armor', Material: 'iron', Stock: 10, Rating: 4, CraftedBy: "Artisan" },
-    { id: 7, ProductID: 7, Name: "Steel Helmet", Price: 600, ImagePath: 'steel_helmet.png', image: steelHelmetImg, Description: "Head safety first.", ItemType: 'helmet', Material: 'steel', Stock: 10, Rating: 4, CraftedBy: "Artisan" },
-    { id: 8, ProductID: 8, Name: "Titanium Dagger", Price: 1700, ImagePath: 'titanium_dagger.png', image: titaniumDaggerImg, Description: "Light and sharp.", ItemType: 'dagger', Material: 'titanium', Stock: 10, Rating: 4, CraftedBy: "Artisan" }
-  ];
+  const [allProducts, setAllProducts] = useState([]);
+  const [recommendedItems, setRecommendedItems] = useState([]);
+  const [isLoadingRecs, setIsLoadingRecs] = useState(true);
+  const [errorRecs, setErrorRecs] = useState(null);
+
+  // Fetch all products for recommendations
+  useEffect(() => {
+    const fetchAllProducts = async () => {
+      setIsLoadingRecs(true);
+      setErrorRecs(null);
+      try {
+        const apiUrl = `/api/products`;
+        const response = await fetch(apiUrl);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setAllProducts(data);
+      } catch (err) {
+        console.error("ShoppingCart: Failed to fetch all products for recommendations:", err);
+        setErrorRecs(err.message || "Could not load recommendations.");
+      } finally {
+        setIsLoadingRecs(false);
+      }
+    };
+    fetchAllProducts();
+  }, []);
+
+  // Select random recommended items once allProducts are fetched
+  useEffect(() => {
+    if (allProducts.length > 0) {
+      const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
+      // Ensure we don't try to slice more items than available, and also filter out items already in cart
+      const currentCartProductIds = cartItems.map(item => item.id); // item.id here is ProductID
+      const potentialRecs = shuffled.filter(p => !currentCartProductIds.includes(p.ProductID));
+      const selected = potentialRecs.slice(0, 4); 
+
+      const itemsWithCorrectImages = selected.map(prod => ({
+        ...prod, // Spread all properties from the fetched product
+        id: prod.ProductID, // Ensure 'id' is ProductID for consistency if needed by onAddToCart
+        image: productImages[prod.ImagePath] || productImages['default_placeholder.png'] // Use centralized productImages map
+      }));
+      setRecommendedItems(itemsWithCorrectImages);
+    }
+  }, [allProducts, cartItems]); // Added cartItems as dependency to re-filter recs if cart changes
   
-  // Subtotal for display (base price * quantity, without rush fee for this line item)
   const subtotal = useMemo(() => (
-    cartItems.reduce((total, item) => total + (item.price * item.quantity), 0)
+    cartItems.reduce((total, item) => total + ((Number(item.price) || 0) * (item.quantity || 0)), 0)
   ), [cartItems]);
 
-  const shipping = 0; // Placeholder
-  const tax = 0;      // Placeholder
-  // cartTotal from useCart() includes rushOrder fees.
+  const shipping = cartItems.length > 0 ? 100.00 : 0; // Example shipping
+  const tax = 0;    // Example tax
 
   return (
     <div className="shopping-cart-container">
@@ -52,11 +86,13 @@ export default function ShoppingCart() {
         <div className="cart-layout">
           <div className="cart-items-section">
             {cartItems.length === 0 ? (
-              <p className="empty-cart-message">Your cart is currently empty. <Link to="/products">Continue Shopping</Link></p>
+              <p className="empty-cart-message">Your cart is currently empty. <Link to="/product">Continue Shopping</Link></p>
             ) : (
               cartItems.map(item => (
+                // CartItem now relies on item.image being the correct imported variable,
+                // which CartProvider should ensure (by also using the centralized productImages map if it fetches raw data).
                 <CartItem 
-                  key={`${item.id}-${item.rushOrder}`} 
+                  key={`${item.id}-${item.rushOrder || false}`} // Ensure key is always unique
                   item={item}
                   onQuantityChange={handleQuantityChange}
                   onRemove={handleRemoveItem}
@@ -70,15 +106,19 @@ export default function ShoppingCart() {
               subtotal={subtotal} 
               shipping={shipping}
               tax={tax}
-              total={cartTotal} 
+              total={cartTotal} // cartTotal from CartProvider includes rush order fees
             />
           )}
         </div>
         
-        <RecommendedItems 
-          items={recommendedItems}
-          onAddToCart={handleAddToCart} 
-        />
+        {isLoadingRecs && <p>Loading recommendations...</p>}
+        {errorRecs && <p style={{color: 'red'}}>Error loading recommendations: {errorRecs}</p>}
+        {!isLoadingRecs && !errorRecs && recommendedItems.length > 0 && (
+          <RecommendedItems 
+            items={recommendedItems} // These items now have their 'image' property resolved by productImages map
+            onAddToCart={handleAddToCart} 
+          />
+        )}
       </div>
     </div>
   );
@@ -88,8 +128,8 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => (
   <div className="cart-item">
     <div className="item-image">
       <div className="image-placeholder">
-        {/* item.image should be the imported image variable if added correctly from ProductDetail */}
-        <img src={item.image || '/placeholder.png'} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        {/* item.image from CartProvider should already be the resolved imported variable */}
+        <img src={item.image || '/placeholder.png'} alt={item.name} style={{ width: '100px', height: '100px', objectFit: 'contain' }} />
       </div>
     </div>
     <div className="item-details">
@@ -97,10 +137,14 @@ const CartItem = ({ item, onQuantityChange, onRemove }) => (
       <p className="item-description">{item.description}</p>
       {item.rushOrder && <p className="rush-order-tag">Rush Order (+20%)</p>}
       <div className="quantity-control">
-        <button className="quantity-btn decrease" onClick={() => onQuantityChange(item.id, -1, item.rushOrder)} >−</button>
+        {/*
+          Pass item.cartItemId if it exists (for logged-in user's items from DB).
+          The CartProvider's handleQuantityChange/handleRemoveItem has logic to handle this.
+        */}
+        <button className="quantity-btn decrease" onClick={() => onQuantityChange(item.cartItemId || {productId: item.id, rushOrder: item.rushOrder}, -1)} >−</button>
         <span className="quantity-display">{item.quantity}</span>
-        <button className="quantity-btn increase" onClick={() => onQuantityChange(item.id, 1, item.rushOrder)} >+</button>
-        <button className="remove-btn" onClick={() => onRemove(item.id, item.rushOrder)}>Remove</button>
+        <button className="quantity-btn increase" onClick={() => onQuantityChange(item.cartItemId || {productId: item.id, rushOrder: item.rushOrder}, 1)} >+</button>
+        <button className="remove-btn" onClick={() => onRemove(item.cartItemId || {productId: item.id, rushOrder: item.rushOrder})}>Remove</button>
       </div>
     </div>
     <div className="item-price">
@@ -125,7 +169,7 @@ const OrderSummary = ({ subtotal, shipping, tax, total }) => {
         <button className="checkout-btn">
           <Link to="/checkout">Proceed to Checkout</Link>
         </button>
-        <button className="continue-btn" onClick={() => navigate('/products')}>
+        <button className="continue-btn" onClick={() => navigate('/product')}>
           Continue Shopping
         </button>
       </div>
@@ -138,29 +182,32 @@ const RecommendedItems = ({ items, onAddToCart }) => (
     <h2 className="recommended-title">You Might Also Like</h2>
     <div className="recommended-grid">
       {items.map(item => (
-        <div key={item.id} className="recommended-item">
+        // 'item' here is a product object from the fetched 'allProducts',
+        // which has been processed to include the 'image' variable via productImages map.
+        <div key={item.ProductID || item.id} className="recommended-item">
           <div className="recommended-image">
-            <img src={item.image} alt={item.Name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={item.image} alt={item.Name || item.name} style={{ width: '100px', height: '100px', objectFit: 'contain' }} />
           </div>
           <div className="recommended-details">
-            <h3>{item.Name}</h3>
-            <p className="recommended-price">₱{item.Price.toFixed(2)}</p>
+            <h3>{item.Name || item.name}</h3>
+            <p className="recommended-price">₱{(Number(item.Price || item.price || 0)).toFixed(2)}</p>
             <button 
               className="add-to-cart-btn"
-              onClick={() => onAddToCart({ 
-                  id: item.ProductID, 
-                  name: item.Name,
-                  price: item.Price,
+              onClick={() => onAddToCart({ // Ensure this object matches what CartProvider's handleAddToCart expects
+                  id: item.ProductID || item.id, 
+                  name: item.Name || item.name,
+                  price: item.Price || item.price, // Unit price
                   quantity: 1, 
-                  image: item.image, 
-                  description: item.Description,
-                  rushOrder: false, 
+                  image: item.image, // This is the mapped image variable
+                  description: item.Description || item.description,
+                  rushOrder: false, // Default for recommended items
+                  // Pass other original product fields if CartProvider needs them when adding to cart
                   ItemType: item.ItemType,
                   Material: item.Material,
                   Stock: item.Stock,
                   Rating: item.Rating,
                   CraftedBy: item.CraftedBy,
-                  ImagePath: item.ImagePath 
+                  ImagePath: item.ImagePath // Original filename
               })}
             >
               <span className="icon-bag">🛍️</span> Add to Cart

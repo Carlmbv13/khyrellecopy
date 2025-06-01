@@ -31,9 +31,9 @@ body {
   max-width: 800px;
   margin: 0 auto;
   padding: 15px;
-  background-color: rgba(0, 255, 0, 0.1);
-  border: 4px solid #d4af37;
-  box-shadow: 8px 8px 0 #000;
+  background-color: rgba(0, 255, 0, 0.1); /* Semi-transparent green */
+  border: 4px solid #d4af37; /* Gold border */
+  box-shadow: 8px 8px 0 #000; /* Pixelated shadow */
   backdrop-filter: blur(2px);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -47,7 +47,7 @@ body {
 ====================== */
 .confirmation-title {
   font-size: 24px;
-  color: #d4af37;
+  color: #d4af37; /* Gold */
   text-align: center;
   margin: 10px 0;
   text-shadow: 0 0 6px #d4af37;
@@ -58,22 +58,25 @@ body {
 /* ======================
    SUMMARY / DETAILS BOXES
 ====================== */
-.order-summary, .order-details {
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 2px solid #555;
+.order-summary-box, /* Updated class name from your JS */
+.order-details {
+  background-color: rgba(0, 0, 0, 0.3); /* Darker transparent background */
+  border: 2px solid #555; /* Darker border */
   padding: 15px;
   margin-bottom: 20px;
   transition: transform 0.2s ease, background-color 0.3s ease;
   position: relative;
 }
-.order-summary:hover, .order-details:hover {
+.order-summary-box:hover, /* Updated class name */
+.order-details:hover {
   transform: translateY(-4px);
   background-color: rgba(0, 0, 0, 0.5);
 }
 
 /* Section headers */
-.order-summary h2, .order-details h2 {
-  color: #d4af37;
+.order-summary-box h2, /* Updated class name */
+.order-details h2 {
+  color: #d4af37; /* Gold */
   font-size: 18px;
   border-bottom: 2px solid #333;
   padding-bottom: 5px;
@@ -82,7 +85,7 @@ body {
 }
 
 /* ======================
-   TABLES
+   TABLES (If you use them, otherwise this can be removed if not used in oc.js)
 ====================== */
 table {
   width: 100%;
@@ -95,12 +98,12 @@ table:hover {
   transform: scale(1.01);
 }
 th, td {
-  border: 1px solid #d4af37;
+  border: 1px solid #d4af37; /* Gold border */
   padding: 10px;
   text-align: left;
 }
 tr:hover {
-  background-color: rgba(212, 175, 55, 0.05);
+  background-color: rgba(212, 175, 55, 0.05); /* Slight gold tint on hover */
 }
 
 /* ======================
@@ -108,13 +111,15 @@ tr:hover {
 ====================== */
 .order-number h3,
 .shipping-info h3 {
-  color: #e0e0e0;
+  color: #e0e0e0; /* Light gray/white */
   font-size: 16px;
+  margin-bottom: 5px; /* Added margin */
 }
 .shipping-info p,
 .order-number p {
-  color: #aaa;
+  color: #aaa; /* Lighter gray for details */
   margin: 5px 0;
+  font-size: 0.9em; /* Slightly smaller */
 }
 
 /* ======================
@@ -123,40 +128,92 @@ tr:hover {
 .items-list {
   margin: 15px 0;
 }
+.items-list h3 { /* Style for "Items:" header */
+  color: #d4af37;
+  font-size: 18px;
+  border-bottom: 2px solid #333;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+  text-shadow: 0 0 3px #d4af37;
+}
 
 .item {
+  display: flex; /* Key for aligning image, info, price */
+  align-items: flex-start; /* Align items to the top */
   padding: 10px 0;
   border-bottom: 2px dashed #333;
   transition: transform 0.2s ease;
+  gap: 15px; /* Space between item parts */
+}
+.item:last-child {
+    border-bottom: none;
 }
 .item:hover {
   transform: scale(1.01);
 }
 
-.item-name {
+.item-image-container {
+  width: 80px;   /* Fixed width for the image container */
+  height: 80px;  /* Fixed height for the image container */
+  border: 2px solid #444;
+  flex-shrink: 0; /* Prevent container from shrinking */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* Clip image if it's larger than container */
+}
+
+.item-image-oc { /* Class from your JS */
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* Scale image to fit, maintain aspect ratio */
+  image-rendering: pixelated;
+}
+
+.item-info-oc { /* Class from your JS */
+  flex-grow: 1; /* Allow info section to take available space */
+  display: flex;
+  flex-direction: column; /* Stack name, qty, rush tag vertically */
+  gap: 3px;
+}
+
+.item-name-oc { /* Class from your JS */
   font-weight: bold;
   color: #e0e0e0;
   font-size: 16px;
 }
 
-.item-image {
-  width: 80px;
-  height: 80px;
-  margin: 5px 0;
-  border: 2px solid #444;
-  image-rendering: pixelated;
+.rush-tag-oc { /* Class from your JS */
+  font-size: 0.8em;
+  color: orange;
+  font-weight: bold;
 }
 
-.item-qty,
-.item-price {
-  display: inline-block;
-  width: 48%;
+.item-qty-oc { /* Class from your JS */
+  color: #aaa;
+  font-size: 14px;
 }
-.item-price {
+
+.item-price-oc { /* Class from your JS */
   text-align: right;
+  min-width: 120px; /* Ensure enough space for prices */
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column; /* Stack unit and total price */
+  gap: 3px;
+}
+.item-price-oc span {
+  display: block;
+  font-size: 14px;
+}
+.item-price-oc span:first-child { /* Unit Price */
+  color: #aaa;
+}
+.item-price-oc span:last-child { /* Total Item Price */
   color: #d4af37;
   font-weight: bold;
 }
+
 
 /* ======================
    TOTAL SECTION
@@ -167,20 +224,32 @@ tr:hover {
   border-top: 2px solid #333;
 }
 .order-total h3 {
-  color: #d4af37;
+  color: #d4af37; /* Gold */
   font-size: 16px;
+  margin-bottom: 10px; /* Added */
 }
 .total-line {
   display: flex;
   justify-content: space-between;
-  margin: 5px 0;
+  margin: 8px 0; /* Increased margin */
+  font-size: 15px; /* Slightly larger */
 }
-.discount-line {
-  color: #4CAF50;
+.total-line span:first-child {
+  color: #bbb; /* Label color */
+}
+.total-line span:last-child {
+  color: #e0e0e0; /* Value color */
+  font-weight: bold;
+}
+.discount-line span:last-child {
+  color: #4CAF50; /* Green for discount */
+}
+.final-total span {
+  font-weight: bold;
+  color: #d4af37 !important; /* Gold, important to override */
+  font-size: 18px; /* Larger for final total */
 }
 .final-total {
-  font-weight: bold;
-  color: #d4af37;
   margin-top: 10px;
   padding-top: 8px;
   border-top: 2px solid #333;
@@ -192,11 +261,13 @@ tr:hover {
 .order-actions {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  margin: 20px 0;
+  flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+  gap: 15px; /* Increased gap */
+  margin: 25px 0; /* Increased margin */
 }
 
 .order-actions button {
+  font-family: 'MyFont', 'Courier New', monospace; /* Ensure button uses custom font */
   font-weight: bold;
   border: none;
   padding: 12px 20px;
@@ -204,40 +275,45 @@ tr:hover {
   cursor: pointer;
   box-shadow: 4px 4px 0 #000;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease;
-  position: relative;
+  position: relative; /* For sparkle positioning */
 }
 
 /* Print Order Button - Green */
 .order-actions .print-btn {
-  background-color: #2ecc71;
-  color: #000;
+  background-color: #2ecc71; /* Bright Green */
+  color: #000; /* Black text for contrast */
 }
 .order-actions .print-btn:hover {
-  background-color: #27ae60;
+  background-color: #27ae60; /* Darker Green */
 }
 
 /* Track Order Button - Brown */
 .order-actions .track-btn {
-  background-color: #a67c52;
+  background-color: #a67c52; /* Muted Brown */
   color: #fff;
 }
 .order-actions .track-btn:hover {
-  background-color: #8b5a2b;
+  background-color: #8b5a2b; /* Darker Brown */
 }
 
 /* Cancel Order Button - Red */
 .order-actions .cancel-btn {
-  background-color: #e74c3c;
+  background-color: #e74c3c; /* Bright Red */
   color: #fff;
 }
 .order-actions .cancel-btn:hover {
-  background-color: #c0392b;
+  background-color: #c0392b; /* Darker Red */
 }
 
 .order-actions button:hover {
-  transform: scale(1.05);
+  transform: translateY(-2px) scale(1.03); /* Subtle lift and scale */
   box-shadow: 6px 6px 0 #000;
 }
+.order-actions button:active {
+  transform: translateY(1px) scale(1);
+  box-shadow: 3px 3px 0 #000;
+}
+
 
 /* Sparkles!! */
 .order-actions button::after {
@@ -247,32 +323,284 @@ tr:hover {
   right: -10px;
   animation: sparkle 1.2s infinite linear;
   font-size: 18px;
+  opacity: 0; /* Start hidden */
+  transition: opacity 0.2s;
 }
+.order-actions button:hover::after {
+  opacity: 1; /* Show on hover */
+}
+
 @keyframes sparkle {
   0% { transform: rotate(0deg) scale(1); opacity: 0.8; }
   50% { transform: rotate(15deg) scale(1.2); opacity: 1; }
   100% { transform: rotate(0deg) scale(1); opacity: 0.8; }
 }
 
+/* Link to continue shopping */
+.continue-shopping-link-oc {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    padding: 10px;
+    color: #d4af37;
+    font-size: 16px;
+    text-decoration: none;
+    border: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+}
+.continue-shopping-link-oc:hover {
+    color: #fff;
+    border-color: #d4af37;
+    text-shadow: 0 0 5px #d4af37;
+}
+
+
 /* ======================
-   POP-UP NOTIFICATION
+   POP-UP NOTIFICATION (for cancellation)
 ====================== */
 .cancel-notification {
-  position: fixed;
-  top: 50%;
+  position: fixed; /* Fixed position */
+  top: 20px; /* Position from top */
   left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: #8b0000;
+  transform: translateX(-50%); /* Center horizontally */
+  background-color: #8b0000; /* Dark red */
   color: white;
-  padding: 10px 20px;
-  border: 3px solid #fff;
+  padding: 15px 25px; /* Increased padding */
+  border: 3px solid #fff; /* White border */
   font-size: 16px;
   box-shadow: 5px 5px 0 #000;
-  animation: pixelAppear 0.5s steps(4);
+  animation: pixelAppear 0.5s ease-out, fadeOutNotification 0.5s ease-in 3.5s forwards; /* Added fade out */
   z-index: 9999;
+  text-align: center;
 }
+
 @keyframes pixelAppear {
-  0% { opacity: 0; transform: translate(-50%, -60%) scale(0.8); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  0% { opacity: 0; transform: translate(-50%, -20px) scale(0.8); } /* Start from slightly above */
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
+
+@keyframes fadeOutNotification {
+  0% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -20px) scale(0.8); visibility: hidden; }
+}
+
+/* Fallback message styling (Order Info Not Found) */
+.order-confirmation-container .confirmation-content p {
+    color: #ccc; /* Lighter text color for paragraphs inside confirmation content */
+    line-height: 1.6;
+}
+.order-confirmation-container .confirmation-content p a {
+    color: #d4af37;
+    text-decoration: none;
+    font-weight: bold;
+}
+.order-confirmation-container .confirmation-content p a:hover {
+    text-decoration: underline;
+    color: #fff;
+}/* In your src/pages/orderconfirm/oc.css file */
+
+/* Container for the item image on the order confirmation page */
+.item-image-container {
+  width: 60px;  /* Or your desired square size, e.g., 50px, 70px */
+  height: 60px; /* Same as width for a square */
+  margin-right: 15px; /* Space between image and item details */
+  border: 1px solid #eee; /* Optional: adds a light border */
+  display: flex; /* Helps with centering the image if it's smaller */
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* Important if using object-fit: cover, or if image is larger */
+  flex-shrink: 0; /* Prevents the container from shrinking if flexbox is used in parent */
+}
+
+/* The actual image tag for items on the order confirmation page */
+.item-image-oc {
+  max-width: 100%;   /* Ensures image doesn't overflow its container */
+  max-height: 100%;  /* Ensures image doesn't overflow its container */
+  width: auto;       /* Maintain aspect ratio by default */
+  height: auto;      /* Maintain aspect ratio by default */
+  object-fit: contain; /* Scales the image down to fit within the container
+                           while maintaining its aspect ratio. The empty space
+                           in the container will be transparent or background color. */
+  /* Alternative: use object-fit: cover; 
+     This will fill the container, cropping the image if its aspect ratio 
+     doesn't match the container's. */
+  display: block; /* Removes extra space often found below inline images */
+}
+
+/* Ensure the .item div in your items-list uses flexbox for proper alignment */
+.items-list .item {
+  display: flex;
+  align-items: center; /* Aligns image and text vertically */
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px dotted #ccc;
+}
+.items-list .item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.item-info-oc {
+  flex-grow: 1; /* Allows text details to take remaining space */
+}
+
+/* You might already have styles for these, just ensure they work with the flex layout */
+.item-name-oc {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 3px;
+}
+.rush-tag-oc {
+  font-size: 0.8em;
+  color: orange;
+  margin-left: 5px;
+  display: inline-block; /* Or block if on its own line */
+}
+.item-qty-oc {
+  font-size: 0.9em;
+  color: #555;
+  display: block; /* Or inline with other info */
+  margin-bottom: 3px;
+}
+.item-price-oc {
+  text-align: right;
+  min-width: 120px; /* Adjust as needed to prevent wrapping */
+  margin-left: 10px; /* Space from item-info-oc */
+}
+.item-price-oc span {
+    display: block; /* Put unit price and total on separate lines */
+    font-size: 0.9em;
+    color: #555;
+}
+.item-price-oc span:first-child {
+    color: #777; /* Lighter color for unit price */
+}/* In src/pages/orderconfirm/oc.css */
+
+/* Container for each item in the list */
+.items-list .item {
+  display: flex;
+  align-items: center; /* Vertically align items if their heights differ */
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px dotted #ccc;
+}
+.items-list .item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* Container for the item image */
+.item-image-container {
+  width: 60px;  /* Desired width for the small square */
+  height: 60px; /* Desired height for the small square */
+  margin-right: 15px; /* Space between image and text details */
+  border: 1px solid #ddd; /* Optional: a light border around the image box */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* Ensures image parts outside the box are clipped */
+  flex-shrink: 0; /* Prevents the image container from shrinking if in a flex layout */
+}
+
+/* The actual image tag for items on the order confirmation page */
+.item-image-oc {
+  max-width: 100%;   /* Image will not exceed the container's width */
+  max-height: 100%;  /* Image will not exceed the container's height */
+  width: auto;       /* Maintain aspect ratio */
+  height: auto;      /* Maintain aspect ratio */
+  object-fit: contain; /* This is key:
+                           - 'contain': Scales the image down to fit within the container
+                                        while maintaining its aspect ratio. Empty space in
+                                        the container will be transparent or background color.
+                           - 'cover':   Would fill the container, cropping the image if its
+                                        aspect ratio doesn't match.
+                        */
+  display: block; /* Removes extra space often found below inline images */
+}
+
+/* Adjust item-info-oc and item-price-oc for flex layout if needed */
+.item-info-oc {
+  flex-grow: 1; /* Allows text details to take up remaining space */
+}
+
+.item-price-oc {
+  text-align: right;
+  min-width: 100px; /* Adjust as needed */
+  margin-left: 10px;
+}
+
+.item-price-oc span {
+    display: block;
+}
+.item-price-oc span:first-child{
+    font-size: 0.9em;
+    color: #666;
+}
+/* In src/pages/orderconfirm/oc.css */
+
+/* Container for each item in the list */
+.items-list .item {
+  display: flex;
+  align-items: center; /* Vertically align items if their heights differ */
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px dotted #ccc;
+}
+.items-list .item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* Container for the item image */
+.item-image-container {
+  width: 60px;  /* Desired width for the small square */
+  height: 60px; /* Desired height for the small square */
+  margin-right: 15px; /* Space between image and text details */
+  border: 1px solid #ddd; /* Optional: a light border around the image box */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* Ensures image parts outside the box are clipped */
+  flex-shrink: 0; /* Prevents the image container from shrinking if in a flex layout */
+}
+
+/* The actual image tag for items on the order confirmation page */
+.item-image-oc {
+  max-width: 100%;   /* Image will not exceed the container's width */
+  max-height: 100%;  /* Image will not exceed the container's height */
+  width: auto;       /* Maintain aspect ratio */
+  height: auto;      /* Maintain aspect ratio */
+  object-fit: contain; /* This is key:
+                           - 'contain': Scales the image down to fit within the container
+                                        while maintaining its aspect ratio. Empty space in
+                                        the container will be transparent or background color.
+                           - 'cover':   Would fill the container, cropping the image if its
+                                        aspect ratio doesn't match.
+                        */
+  display: block; /* Removes extra space often found below inline images */
+}
+
+/* Adjust item-info-oc and item-price-oc for flex layout if needed */
+.item-info-oc {
+  flex-grow: 1; /* Allows text details to take up remaining space */
+}
+
+.item-price-oc {
+  text-align: right;
+  min-width: 100px; /* Adjust as needed */
+  margin-left: 10px;
+}
+
+.item-price-oc span {
+    display: block;
+}
+.item-price-oc span:first-child{
+    font-size: 0.9em;
+    color: #666;
+}
+
+/* Other existing styles for .order-confirmation-container, .confirmation-content, etc. remain */
+/* Other existing styles for .order-confirmation-container, .confirmation-content, etc. remain */

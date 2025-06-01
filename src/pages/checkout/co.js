@@ -8,10 +8,9 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const { 
     cartItems, 
-    // cartTotal, // We will use totalPayment calculated locally for the order summary
     handleQuantityChange: updateCartQuantity, 
     handleRemoveItem: removeFromCart,
-    clearCart // Assuming CartProvider will have a clearCart function after order placement
+    clearCart 
   } = useCart();
 
   const [message, setMessage] = useState('');
@@ -21,8 +20,8 @@ const CheckoutPage = () => {
   const [discountApplied, setDiscountApplied] = useState(false);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [promoError, setPromoError] = useState('');
-  const [isPlacingOrder, setIsPlacingOrder] = useState(false); // For loading state
-  const [orderError, setOrderError] = useState(''); // For errors during order placement
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const [orderError, setOrderError] = useState('');
 
   const validPromoCode = 'METAL10'; 
   const promoDiscountPercentage = 0.10; 
@@ -66,66 +65,101 @@ const CheckoutPage = () => {
     setIsPlacingOrder(true);
     setOrderError('');
 
-    // Determine if the overall order is a rush order
-    const isRushOrder = cartItems.some(item => item.rushOrder);
+    const isRushOrderOverall = cartItems.some(item => item.rushOrder);
 
-    const orderPayload = {
-      // CustomerID would come from auth context in a real app
-      // For now, backend will use a placeholder or you can pass a default
-      // customerId: 1, // Example: if you had user auth
+    const orderPayloadToBackend = {
       items: cartItems.map(item => ({
-        productId: item.id, // This is ProductID
+        productId: item.id,
         quantity: item.quantity,
         unitPrice: Number(item.price) || 0,
-        isRushItem: item.rushOrder, // To inform backend if specific items contribute to rush status
-        // Backend will calculate total item price based on unitPrice, quantity, and rush status if needed per item
+        isRushItem: item.rushOrder,
       })),
+      paymentMethod: paymentMethod,
+      finalTotal: totalPayment,
+      isRushOrder: isRushOrderOverall,
       messageForSeller: message,
       discountCode: discountApplied ? discountCode : null,
       appliedDiscountAmount: discountAmount,
-      paymentMethod: paymentMethod,
       merchandiseSubtotal: merchandiseSubtotal,
       shippingFee: shipping,
-      finalTotal: totalPayment,
-      isRushOrder: isRushOrder // Overall order rush status
     };
     
     try {
-      const response = await fetch(`/api/orders`, {
+      const apiUrl = `/api/orders`;
+      console.log("CheckoutPage: Attempting to place order to URL:", apiUrl); 
+      console.log("CheckoutPage: Sending this payload to backend:", JSON.stringify(orderPayloadToBackend, null, 2));
+
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Add Authorization header if you have tokens:
-          // 'Authorization': `Bearer ${yourAuthToken}`
+          // 'Authorization': `Bearer ${yourAuthToken}` // Add if using token auth
         },
-        body: JSON.stringify(orderPayload)
+        body: JSON.stringify(orderPayloadToBackend)
       });
 
-      const responseData = await response.json();
+      const backendResponseData = await response.json(); 
 
       if (!response.ok) {
-        throw new Error(responseData.message || 'Failed to place order.');
+        // Log the raw response text if it's not JSON to see the HTML error
+        if (response.headers.get("content-type") && !response.headers.get("content-type").includes("application/json")) {
+            const textError = await response.text();
+            console.error("Backend Error (Non-JSON Response):", textError);
+        }
+        throw new Error(backendResponseData.message || `Failed to place order. Status: ${response.status}`);
       }
-
-      // Order placed successfully
-      console.log("Order Placed Successfully:", responseData);
-      if (clearCart) clearCart(); // Clear the cart from CartProvider (and localStorage)
       
-      // Pass order details (including the new OrderID from backend) to confirmation page
+      const orderDataForConfirmation = {
+        orderId: backendResponseData.orderDetails.orderId,
+        orderDate: backendResponseData.orderDetails.orderDate || new Date().toLocaleDateString(),
+        paymentMethod: paymentMethod, 
+        items: cartItems.map(item => ({ 
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: Number(item.price) || 0, 
+          totalItemPrice: item.totalPrice, 
+          image: item.image, 
+          description: item.description,
+          rushOrder: item.rushOrder,
+          ImagePath: item.ImagePath 
+        })),
+        merchandiseSubtotal: merchandiseSubtotal,
+        shippingFee: shipping,
+        appliedDiscountAmount: discountAmount,
+        finalTotal: totalPayment, 
+        customerDetails: { 
+            name: "Valued Customer", 
+            shippingAddress: "CM Recto Ave. Lapasan, CDOC PH" 
+        }
+      };
+      
+      console.log("CheckoutPage: Data being SENT to confirmation:", JSON.stringify(orderDataForConfirmation, null, 2));
+
+      if (typeof clearCart === 'function') {
+        clearCart(); 
+      } else {
+        console.warn("clearCart function not available from useCart(). Cart may not be cleared.");
+      }
+      
       navigate('/orderconfirm', { 
         state: { 
-          orderDetails: responseData.orderDetails // Assuming backend returns this
+          orderData: orderDataForConfirmation 
         } 
       });
 
     } catch (error) {
       console.error("Error placing order:", error);
-      setOrderError(error.message || "An unexpected error occurred while placing your order.");
+      if (error.message.includes("Unexpected token '<'") || error.message.includes("Failed to parse JSON")) {
+        setOrderError("Failed to communicate with the order server. The server sent an unexpected response. Please check backend logs.");
+      } else {
+        setOrderError(error.message || "An unexpected error occurred while placing your order.");
+      }
     } finally {
       setIsPlacingOrder(false);
     }
   };
-
 
   return (
     <div className="checkout-page">
@@ -134,13 +168,12 @@ const CheckoutPage = () => {
         <p className="checkout-description">
           Review your order details, enter your delivery and payment info, and place your order to complete your purchase.
         </p>
-
         <div className="checkout-sections">
           <div className="order-items-section">
             <h2>Your Items</h2>
             {cartItems.length === 0 ? (
-                <p>Your cart is empty. <Link to="/products">Continue Shopping</Link></p>
-            ) : (
+                <p>Your cart is empty. <Link to="/product">Continue Shopping</Link></p>
+            ) : ( 
                 cartItems.map(item => (
                   <div key={`${item.id}-${item.rushOrder}`} className="order-item">
                     <div className="item-image">
@@ -165,98 +198,51 @@ const CheckoutPage = () => {
                   </div>
                 ))
             )}
-
-            {cartItems.length > 0 && (
+            {cartItems.length > 0 && ( 
               <>
                 <div className="message-section">
                   <label>Message for Seller (Optional):</label>
-                  <textarea
-                    placeholder="Any special instructions for your order..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                  />
+                  <textarea placeholder="Any special instructions for your order..." value={message} onChange={(e) => setMessage(e.target.value)} />
                 </div>
-
                 <div className="promo-section">
                   <div className="promo-input">
-                    <input 
-                      type="text" 
-                      placeholder="Enter promo code" 
-                      value={discountCode}
+                    <input type="text" placeholder="Enter promo code" value={discountCode}
                       onChange={(e) => {
                         setDiscountCode(e.target.value);
                         setPromoError(''); 
-                        if (discountApplied) { 
-                            setDiscountApplied(false);
-                            setDiscountAmount(0);
-                        }
+                        if (discountApplied) { setDiscountApplied(false); setDiscountAmount(0); }
                       }}
-                      disabled={discountApplied && discountCode === validPromoCode} 
-                    />
-                    <button 
-                      className="apply-btn"
-                      onClick={applyDiscount}
-                      disabled={discountApplied && discountCode === validPromoCode}
-                    >
+                      disabled={discountApplied && discountCode === validPromoCode} />
+                    <button className="apply-btn" onClick={applyDiscount} disabled={discountApplied && discountCode === validPromoCode}>
                       {discountApplied && discountCode === validPromoCode ? 'Applied' : 'Apply'}
                     </button>
                   </div>
                   {promoError && <p className="promo-error">{promoError}</p>}
-                  {discountApplied && discountCode === validPromoCode && (
-                    <p className="promo-success">
-                      Promo code applied! Discount: ₱ {discountAmount.toFixed(2)}
-                    </p>
-                  )}
+                  {discountApplied && discountCode === validPromoCode && <p className="promo-success">Promo code applied! Discount: ₱ {discountAmount.toFixed(2)}</p>}
                 </div>
               </>
             )}
           </div>
-
-          {cartItems.length > 0 && (
+          {cartItems.length > 0 && ( 
             <div className="order-summary-section">
               <h2>Order Summary</h2>
               <table className="summary-table">
                 <tbody>
-                  <tr>
-                    <td>Merchandise Subtotal</td>
-                    <td>₱ {(Number(merchandiseSubtotal) || 0).toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td>Shipping Fee</td>
-                    <td>₱ {(Number(shipping) || 0).toFixed(2)}</td>
-                  </tr>
-                  {discountApplied && discountAmount > 0 && (
-                    <tr>
-                      <td>Discount</td>
-                      <td>- ₱ {(Number(discountAmount) || 0).toFixed(2)}</td>
-                    </tr>
-                  )}
-                  <tr className="total-row">
-                    <td><strong>Total Payment:</strong></td>
-                    <td><strong>₱ {(Number(totalPayment) || 0).toFixed(2)}</strong></td>
-                  </tr>
+                  <tr><td>Merchandise Subtotal</td><td>₱ {(Number(merchandiseSubtotal) || 0).toFixed(2)}</td></tr>
+                  <tr><td>Shipping Fee</td><td>₱ {(Number(shipping) || 0).toFixed(2)}</td></tr>
+                  {discountApplied && discountAmount > 0 && (<tr><td>Discount</td><td>- ₱ {(Number(discountAmount) || 0).toFixed(2)}</td></tr>)}
+                  <tr className="total-row"><td><strong>Total Payment:</strong></td><td><strong>₱ {(Number(totalPayment) || 0).toFixed(2)}</strong></td></tr>
                 </tbody>
               </table>
-
               <div className="payment-option-checkout">
                 <span>Payment Option: </span>
                 <div className="payment-selector">
                   <span>{paymentMethod}</span>
-                  <button 
-                    className="payment-toggle"
-                    onClick={() => setShowPaymentOptions(!showPaymentOptions)}
-                  >
-                    Change
-                  </button>
+                  <button className="payment-toggle" onClick={() => setShowPaymentOptions(!showPaymentOptions)}>Change</button>
                   {showPaymentOptions && (
                     <div className="payment-dropdown">
                       {['Cash On Delivery', 'GCash', 'Credit/Debit Card'].map(method => (
-                        <button key={method} onClick={() => {
-                          setPaymentMethod(method);
-                          setShowPaymentOptions(false);
-                        }}>
-                          {method}
-                        </button>
+                        <button key={method} onClick={() => { setPaymentMethod(method); setShowPaymentOptions(false); }}>{method}</button>
                       ))}
                     </div>
                   )}
@@ -273,5 +259,4 @@ const CheckoutPage = () => {
     </div>
   );
 };
-
 export default CheckoutPage;
